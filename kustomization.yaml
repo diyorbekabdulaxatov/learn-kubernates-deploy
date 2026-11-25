@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: go-lab
+resources:
+  - configmap.yaml
+  - secret.yaml
+  - deployment.yaml
+  - ingress.yaml
+images:
+  - name: ghcr.io/diyorbekabdulaxatov/go-k8s-lab
+    newTag: c8bfda06f0f1958645f7772da5f0fd627884679b

@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-k8s-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-k8s-lab
+  template:
+    metadata:
+      labels:
+        app: go-k8s-lab
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: app
+          image: ghcr.io/diyorbekabdulaxatov/go-k8s-lab:v7
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: go-k8s-lab-config
+                  key: APP_MESSAGE
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: go-k8s-lab-secret
+                  key: API_KEY
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "32Mi"
+            limits:
+              cpu: "500m"
+              memory: "64Mi"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: go-k8s-lab-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-k8s-lab
+spec:
+  selector:
+    app: go-k8s-lab
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
